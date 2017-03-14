@@ -21,6 +21,6 @@ setDT(lalonde)
 lalonde[, beta:= out$beta]
 setkey(lalonde , ps)
 
-
+pdf("figures/lalonde_example.pdf",8,6)
 lalonde[ , plot(x=ps,y=beta , type='l')]
-
+dev.off()
