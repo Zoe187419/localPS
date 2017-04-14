@@ -12,7 +12,7 @@ ps.lalonde <- ps(treat ~ age + educ + black + hispan + nodegree +
 # save the ps
 lalonde$ps = ps.lalonde$ps[,1]
 
-# fit LoWePS-QR
+# fit LoWePS -- propensity score only!
 out <- localPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,h=0.1)
 
 # generate plots!
@@ -24,3 +24,17 @@ setkey(lalonde , ps)
 pdf("figures/lalonde_example.pdf",8,6)
 lalonde[ , plot(x=ps,y=beta , type='l')]
 dev.off()
+
+
+# find prognostic score
+lalonde$prog = predict( lm(re78 ~ age + educ + black + hispan + nodegree +
+                             married + re74 + re75 , data=lalonde[treat==0,]) , newdata=lalonde)
+
+# scale to 0-1
+lalonde[ , prog := (prog-min(prog))/(max(prog)-min(prog))]
+
+# fit LoWePSPS -- propensity score and prognostic score
+out <- localPSPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,prog=lalonde$prog,h=0.1)
+
+heatmap.localPSPSreg(out)
+
