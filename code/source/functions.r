@@ -12,13 +12,17 @@ localPSreg <- function(Y,ps,X,h=.1){
   V=beta=numeric(length(Y))
   CI = matrix(0,length(Y),2)
   # loop over observations and do a weighted regression around that obs
+  # weight matrix -- 
+  K <- matrix(0 , length(Y) , length(Y))
   for (i in 1:length(Y)){
     # bandwidth -- user specified for now
     #h = diff(range(ps))/15
     # weights
-    K = dnorm( (ps[i]-ps)/h )/dnorm(0) 
+    K[i,] = dnorm( (ps[i]-ps)/h )/dnorm(0) 
+    # standardize weights within X (useful when collapsing below)
+    K[i,] = K[i,] / (X*sum(X*K[i,]) + (1-X)*sum((1-X)*K[i,]))
     # fit the model
-    dta = data.frame(Y=Y,X=X,K=K,ps=ps)
+    dta = data.frame(Y=Y,X=X,K=K[i,],ps=ps)
     D <- svydesign(id = ~1, weights = ~K, data=dta)
     M = svyglm(Y~X,D)
     # save output
@@ -26,7 +30,14 @@ localPSreg <- function(Y,ps,X,h=.1){
     V[i] = vcov(M)[2,2]
     CI[i,] = beta[i] + c(-1.96,1.96)*sqrt(V[i])
   }
-  return(list(beta=beta,CI=CI,V=V))
+  # collapse weights for estimation of ATT
+  w <- colSums(K[X==1,])
+  dta = data.frame(Y=Y,X=X,K=w)
+  D <- svydesign(id = ~1, weights = ~w, data=dta)
+  M = svyglm(Y~X,D)
+  
+  out = data.frame(Y=Y,X=X,ps=ps,beta=beta,LB=CI[,1],UB=CI[,2],V=V)
+  return(list(out=out,ATT=summary(M)$coef[2,]))
 }
 
 
@@ -44,14 +55,18 @@ localPSreg <- function(Y,ps,X,h=.1){
 localPSPSreg <- function(Y,ps,prog,X,h=.1 , estimand="ATT"){
   V=beta=numeric(length(Y))
   CI = matrix(0,length(Y),2)
+  K <- matrix(0 , length(Y) , length(Y))
   # loop over observations and do a weighted regression around that obs
   for (i in 1:length(Y)){
     # bandwidth -- user specified for now
     #h = diff(range(ps))/15
     # weights
-    K = dnorm( sqrt( (ps[i]-ps)^2 + (prog[i]-prog)^2 )/h )/dnorm(0) 
+    K[i,] = dnorm( sqrt( (ps[i]-ps)^2 + (prog[i]-prog)^2 )/h )/dnorm(0)
+    # standardize weights within X (useful when collapsing below)
+    K[i,] = K[i,] / (X*sum(X*K[i,]) + (1-X)*sum((1-X)*K[i,]))
+    
     # fit the model
-    dta = data.frame(Y=Y,X=X,K=K)
+    dta = data.frame(Y=Y,X=X,K=K[i,])
     D <- svydesign(id = ~1, weights = ~K, data=dta)
     M = svyglm(Y~X,D)
     # save output
@@ -59,8 +74,14 @@ localPSPSreg <- function(Y,ps,prog,X,h=.1 , estimand="ATT"){
     V[i] = vcov(M)[2,2]
     CI[i,] = beta[i] + c(-1.96,1.96)*sqrt(V[i])
   }
+  # collapse weights for estimation of ATT
+  w <- colSums(K[X==1,])
+  dta = data.frame(Y=Y,X=X,K=w)
+  D <- svydesign(id = ~1, weights = ~w, data=dta)
+  M = svyglm(Y~X,D)
+  
   out = data.frame(Y=Y,X=X,ps=ps,prog=prog,beta=beta,var=V,LB=CI[,1],UB=CI[,2])
-  return(out)
+  return(list(out=out,ATT=summary(M)$coef[2,]))
 }
 
 ###############################

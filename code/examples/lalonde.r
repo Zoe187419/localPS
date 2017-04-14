@@ -15,10 +15,20 @@ lalonde$ps = ps.lalonde$ps[,1]
 # fit LoWePS -- propensity score only!
 out <- localPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,h=0.1)
 
-# generate plots!
+# check that the ATT estimate works
+temp = out$out
+setDT(temp)
+
+# just the mean of beta's at treated propensity scores
+temp[X==1,mean(beta)]
+
+# compare to calculation using weights
+out$ATT
+
+# generate plot!
 library(data.table)
 setDT(lalonde)
-lalonde[, beta:= out$beta]
+lalonde[, beta:= out$out[,"beta"]]
 setkey(lalonde , ps)
 
 pdf("figures/lalonde_example.pdf",8,6)
@@ -36,5 +46,16 @@ lalonde[ , prog := (prog-min(prog))/(max(prog)-min(prog))]
 # fit LoWePSPS -- propensity score and prognostic score
 out <- localPSPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,prog=lalonde$prog,h=0.1)
 
-heatmap.localPSPSreg(out)
+# check that the ATT estimate works
+temp = out$out
+setDT(temp)
+
+# just the mean of beta's at treated propensity scores
+temp[X==1,mean(beta)]
+
+# compare to calculation using weights
+out$ATT
+
+# generate heatmap!
+heatmap.localPSPSreg(out$out)
 
