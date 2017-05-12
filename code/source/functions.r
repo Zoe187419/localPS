@@ -17,8 +17,12 @@ localPSreg <- function(Y,ps,X,h=.1){
   for (i in 1:length(Y)){
     # bandwidth -- user specified for now
     #h = diff(range(ps))/15
+    
     # weights
-    K[i,] = dnorm( (ps[i]-ps)/h )/dnorm(0) 
+    #K[i,] = dnorm( (ps[i]-ps)/h )/dnorm(0) 
+    K[i,] = dnorm( (ps[i]-ps)/h , log=T) - dnorm(0,log=T) 
+    K[i,] = exp(X*(K[i,]-max(K[i,X==1])) + (1-X)*(K[i,]-max(K[i,X==0])))
+    
     # standardize weights within X (useful when collapsing below)
     K[i,] = K[i,] / (X*sum(X*K[i,]) + (1-X)*sum((1-X)*K[i,]))
     # fit the model
