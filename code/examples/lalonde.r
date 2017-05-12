@@ -13,7 +13,7 @@ ps.lalonde <- ps(treat ~ age + educ + black + hispan + nodegree +
 lalonde$ps = ps.lalonde$ps[,1]
 
 # fit LoWePS -- propensity score only!
-out <- localPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,h=0.1)
+out <- localPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,h.ps=0.1)
 
 # check that the ATT estimate works
 temp = out$out
@@ -44,7 +44,7 @@ lalonde$prog = predict( lm(re78 ~ age + educ + black + hispan + nodegree +
 lalonde[ , prog := (prog-min(prog))/(max(prog)-min(prog))]
 
 # fit LoWePSPS -- propensity score and prognostic score
-out <- localPSPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,prog=lalonde$prog,h=0.1)
+out <- localPSreg(Y=lalonde$re78,X=lalonde$treat,ps=lalonde$ps,prog=lalonde$prog,h.ps=0.1,h.prog=0.1)
 
 # check that the ATT estimate works
 temp = out$out
@@ -57,5 +57,5 @@ temp[X==1,mean(beta)]
 out$ATT
 
 # generate heatmap!
-heatmap.localPSPSreg(out$out)
+heatmap.localPSreg(out$out)
 
