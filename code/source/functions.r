@@ -66,10 +66,22 @@ localPSreg <- function(Y,X,ps=NULL,prog=NULL,h.ps=.1, h.prog=1 , estimand="ATT")
   w <- colSums(K[X==1,])
   dta = data.frame(Y=Y,X=X,K=w)
   D <- svydesign(id = ~1, weights = ~w, data=dta)
-  M = suppressWarnings(svyglm(Y~X,D))
+  
+  #---------------------------------------
+  # edited by cindy
+  #M = suppressWarnings(svyglm(Y~X,D))
+  fitted.model <- suppressWarnings(svyglm(Y~X,D))
+	Yhat <- predict(fitted.model, type="response") 
+	RMSE <- sqrt(mean((Yhat-Y)^2))
+	ATT.estimate <- coef(fitted.model)["X"]
+	ATT.se <- SE(fitted.model)["X"]
+	ATT.L95 <-confint(fitted.model)["X","2.5 %"]
+	ATT.U95 <-confint(fitted.model)["X","97.5 %"]
+#---------------------------------------
   
   out = data.frame(Y=Y,X=X,ps,beta=beta,var=V,LB=CI[,1],UB=CI[,2])
-  return(list(out=out,ATT=summary(M)$coef[2,]))
+  return(list(out=out, ATT.estimate=ATT.estimate, ATT.se=ATT.se, ATT.L95=ATT.L95, ATT.U95=ATT.U95, RMSE=RMSE)) #edited by cindy to return ATT
+  #return(list(out=out,ATT=summary(M)$coef[2,]))
 }
 
 ###############################
